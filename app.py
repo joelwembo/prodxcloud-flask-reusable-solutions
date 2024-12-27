@@ -1,21 +1,33 @@
-from flask import Flask, render_template
+from flask import Flask, request, jsonify
+from transformers import pipeline
 
+# Initialize the Flask app
 app = Flask(__name__)
 
-@app.route("/")
-def hello_world():
-    return render_template("index.html", title="Hello")
+# Load a small pre-trained language model pipeline
+# Using Hugging Face Transformers pipeline for text generation
+text_generator = pipeline("text-generation", model="gpt2")
 
-@app.route('/accounts/', methods=['POST'])
-def create_user():
-    """Create an account."""
+@app.route('/')
+def home():
+    return "Welcome to the MiniLLM API!"
+
+@app.route('/generate', methods=['POST'])
+def generate_text():
     data = request.get_json()
-    name = data['name']
-    if name:
-        new_account = Account(name=name,
-                              created_at=dt.now())
-        db.session.add(new_account)  # Adds new User record to database
-        db.session.commit()  # Commits all changes
-        return make_response(f"{new_account} successfully created!")
-    else:
-        return make_response(f"Name can't be null!")
+    prompt = data.get('prompt', '')
+    max_length = data.get('max_length', 50)
+
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    try:
+        # Generate text
+        result = text_generator(prompt, max_length=max_length, num_return_sequences=1)
+        return jsonify({"generated_text": result[0]['generated_text']})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Run the Flask app
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

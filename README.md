@@ -11,3 +11,6 @@ To run this application:
 ```
 flask --debug run
 ```
+
+
+python app.py
